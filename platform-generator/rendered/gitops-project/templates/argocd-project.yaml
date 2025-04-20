@@ -1,0 +1,22 @@
+---
+# Source: gitops-project/templates/argocd-project.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: foo
+  namespace: argocd
+spec:
+  description: Foo Portal GitOps Project
+  sourceRepos:
+    - https://dev.azure.com/acme/Biz-Portal_git/foo-leave-service-k8s-manifests
+    - https://dev.azure.com/acme/Biz-Portal_git/foo-intake-service-k8s-manifests
+  destinations:
+    - namespace: foo-gitops-dev
+      server: https://kubernetes.default.svc
+    - namespace: foo-gitops-nonprod
+      server: https://kubernetes.default.svc
+    - namespace: foo-gitops-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'

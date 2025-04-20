@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Values.projectShortName }}
+  namespace: argocd
+spec:
+  description: {{ .Values.projectDescription }}
+  sourceRepos:
+  {{- range .Values.repositories }}
+    - {{ . }}
+  {{- end }}
+  destinations:
+  {{- range .Values.environments }}
+    - namespace: {{ $.Values.projectShortName }}-gitops-{{ . }}
+      server: https://kubernetes.default.svc
+  {{- end }}
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'

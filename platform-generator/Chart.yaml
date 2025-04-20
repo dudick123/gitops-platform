@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gitops-project
+description: A Helm chart to render GitOps components from a GitOpsProject abstraction
+type: application
+version: 0.1.0
+appVersion: "1.0"

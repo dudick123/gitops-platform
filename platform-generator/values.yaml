@@ -1,0 +1,18 @@
+projectName: foo-portal
+projectShortName: foo
+projectDescription: "Foo Portal GitOps Project"
+
+environments:
+  - dev
+  - nonprod
+  - prod
+
+repositories:
+  - https://dev.azure.com/acme/Biz-Portal_git/foo-leave-service-k8s-manifests
+  - https://dev.azure.com/acme/Biz-Portal_git/foo-intake-service-k8s-manifests
+
+applications:
+  - name: leave-service
+    repoURL: https://dev.azure.com/acme/Biz-Portal_git/foo-leave-service-k8s-manifests
+  - name: intake-service
+    repoURL: https://dev.azure.com/acme/Biz-Portal_git/foo-intake-service-k8s-manifests
