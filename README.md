@@ -174,7 +174,7 @@ Use helm template with the --output-dir flag:
 ```bash
 helm template gitops-project ./platform-generator \ 
   --values ./platform-generator/tenants/tenant-a/values.yaml  \
-  --output-dir ./base/tenant-a
+  --output-dir ./templates/base/tenant-a
 ```
 
 ### Explanation of the command
@@ -193,21 +193,28 @@ The release name for the Helm chart. It is a label used to identify the generate
 This will render each resource into a separate file in the specified output directory. For example:
 
 ```bash
-wrote ./base/tenant-a/gitops-project/templates/namespace.yaml
-wrote ./base/tenant-a/gitops-project/templates/argocd-project.yaml
-wrote ./base/tenant-a/gitops-project/templates/applicationset.yaml
+wrote ./templates/base/tenant-a/gitops-project/templates/namespace.yaml
+wrote ./templates/base/tenant-a/gitops-project/templates/argocd-project.yaml
+wrote ./templates/base/tenant-a/gitops-project/templates/argocd-application-set.yaml
 ```
 
 This creates a structure like:
 
 ```bash
-├── base
-│   ├── tenant-a
-│   │   └── gitops-project
-│   │       └── templates
-│   │           ├── applicationset.yaml
-│   │           ├── argocd-project.yaml
-│   │           └── namespace.yaml
+└── templates
+    ├── base
+    │   ├── tenant-a
+    │   │   ├── argocd-application-set.yaml
+    │   │   ├── argocd-project.yaml
+    │   │   ├── gitops-project
+    │   │   │   └── templates
+    │   │   │       ├── argocd-application-set.yaml
+    │   │   │       ├── argocd-project.yaml
+    │   │   │       └── namespace.yaml
+    │   │   ├── kustomization.yaml
+    │   │   └── namespace.yaml
+    │   ├── tenant-b
+    │   └── tenant-c
 ```
 
 ## Kustomize
