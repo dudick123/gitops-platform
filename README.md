@@ -10,25 +10,58 @@ The goal is to breakdown the higher-level, GitOpsProject abstraction into smalle
 
 ## Project Layout
 
-1. Folder Structure for Helm Chart
+1. Folder Structure for GitOps Platform
 
-Create a Helm chart that maps parts of the GitOpsProject spec to Kubernetes/ArgoCD primitives.
+The basic folder structure for the GitOps platform generator is as follows:
 
-gitops-project-chart/
-├── templates/
-│   ├── namespace.yaml
-│   ├── argocd-project.yaml
-│   ├── applicationset.yaml
-├── values.yaml
-Chart.yaml
+```bash
+.
+├── README.md
+├── base
+│   ├── tenant-a
+│   │   └── gitops-project
+│   │       └── templates
+│   │           ├── applicationset.yaml
+│   │           ├── argocd-project.yaml
+│   │           └── namespace.yaml
+│   ├── tenant-b
+│   └── tenant-c
+└── platform-generator
+    ├── Chart.yaml
+    ├── rendered
+    │   └── gitops-project
+    │       └── templates
+    │           ├── applicationset.yaml
+    │           ├── argocd-project.yaml
+    │           └── namespace.yaml
+    ├── templates
+    │   ├── applicationset.yaml
+    │   ├── argocd-project.yaml
+    │   └── namespace.yaml
+    ├── tenants
+    │   └── tenant-a
+    │       └── values.yaml
+    └── values.yaml
+```
+
+A few items of note:
+
+- The `platform-generator` directory contains the Helm chart that generates the GitOps project resources. 
+
+- This `platform-generator/templates` folder is where you would define your templates to produce specific Kubernetes resources. In this case, we have templates for `namespace.yaml`, `argocd-project.yaml`, and `argocd-applications-set.yaml`. Future templates such as `network-policy`can be added here as needed.
+
+- The `platform-generator/tenants` directory contains the values.yaml files for each tenant. This is where you would define the specific values for each tenant's GitOps project.
+
+- The `base` directory contains the rendered output of the GitOps project for each tenant. This is the output directory for Helm charts. The `base/tenant-a` folder would contain the rendered output for the `tenant-a` GitOps project and can be further enhanced with `kustomize` to build the final manifests for each environment.
 
 
+## A Look At En Example **values.yaml** File
 
-⸻
+The `values.yaml` file is where you would define the specific values for youar GitOps project. The `project` is a composition of multiple components, including the project name, description, environments, repositories, and applications.
 
-2. values.yaml
+Here is an example of what a `values.yaml` file might look like:
 
-Pass your high-level GitOps abstraction via values.yaml:
+```yaml
 
 projectName: foo-portal
 projectShortName: foo
@@ -49,26 +82,25 @@ applications:
   - name: intake-service
     repoURL: https://dev.azure.com/acme/Biz-Portal_git/foo-intake-service-k8s-manifests
 
+```
 
+## Template: namespace.yaml
 
-⸻
+This template creates a Kubernetes namespace. The rendered namepsace will be further processed by `kustomize` to build the final manifests for each environment of dev, nonprod and prod.
 
-3. Template: namespace.yaml
-
-{{- range .Values.environments }}
+```yaml
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ $.Values.projectShortName }}-gitops-{{ . }}
----
-{{- end }}
 
+```
 
+## Template: argocd-project.yaml
 
-⸻
+This template creates an ArgoCD project. The project name is derived from the `projectShortName` value in the `values.yaml` file. The project description and source repositories are also defined here.
 
-4. Template: argocd-project.yaml
-
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -88,15 +120,13 @@ spec:
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'
+```
 
-
-
-⸻
-
-5. Template: applicationset.yaml
+## Template: argocd-application-set.yaml
 
 This assumes use of ApplicationSet with a matrix generator.
 
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -134,12 +164,11 @@ spec:
           prune: true
           selfHeal: true
 
+```
 
+## Rendering Each Resource to Separate Files
 
-⸻
-
-6. Rendering Each Resource to Separate Files
-
+To render each resource into a separate file, you can use the `helm template` command with the `--output-dir` flag. This will create a directory structure that mirrors the Helm chart structure, allowing you to easily manage and version control the generated resources.
 Use helm template with the --output-dir flag:
 
 ```bash
@@ -147,27 +176,50 @@ helm template gitops-project ./platform-generator \
   --values ./platform-generator/tenants/tenant-a/values.yaml  \
   --output-dir ./base/tenant-a
 ```
+
+### Explanation of the command
+
+`helm template`: This command generates Kubernetes manifests from a Helm chart without installing them into a Kubernetes cluster.
+gitops-project:
+
+The release name for the Helm chart. It is a label used to identify the generated resources.
+
+`./platform-generator`: The path to the Helm chart directory. This is where the chart's Chart.yaml and templates are located.
+
+`--values ./platform-generator/tenants/tenant-a/values.yaml`: Specifies a custom values.yaml file to override default values in the chart. In this case, it uses the values specific to "tenant-a."
+
+`--output-dir ./base/tenant-a`: Specifies the directory where the rendered Kubernetes manifests will be saved. The output will be written to `./base/tenant-a`
+
 This will render each resource into a separate file in the specified output directory. For example:
 
 ```bash
 wrote ./base/tenant-a/gitops-project/templates/namespace.yaml
 wrote ./base/tenant-a/gitops-project/templates/argocd-project.yaml
 wrote ./base/tenant-a/gitops-project/templates/applicationset.yaml
+```
+
 This creates a structure like:
 
-rendered/
-└── gitops-project/
-    ├── templates/
-        ├── namespace.yaml
-        ├── argocd-project.yaml
-        ├── applicationset.yaml
+```bash
+├── base
+│   ├── tenant-a
+│   │   └── gitops-project
+│   │       └── templates
+│   │           ├── applicationset.yaml
+│   │           ├── argocd-project.yaml
+│   │           └── namespace.yaml
+```
 
-You can check in each rendered file into a GitOps repo (e.g., with ArgoCD watching the folder).
+## Kustomize
 
-⸻
+Kustomize will be used to build the final manifests for each environment. The `kustomization.yaml` file will be created in each environment directory, and it will reference the rendered resources.
+The `kustomization.yaml` file will look something like this:
 
-Bonus Tips
-	•	Use Helm subcharts if you want to package each component (e.g., namespace, argocd-project, appset) as its own reusable Helm chart.
-	•	Add conditions in Chart.yaml to toggle rendering components.
-
-⸻
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - argocd-project.yaml
+  - applicationset.yaml
+```
