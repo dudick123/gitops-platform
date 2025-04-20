@@ -1,5 +1,5 @@
 ---
-# Source: gitops-project/templates/argocd-application-set.yaml
+# Source: gitops-project/templates/applicationset.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
